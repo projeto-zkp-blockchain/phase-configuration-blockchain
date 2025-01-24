@@ -1,5 +1,4 @@
-<<<<<<< HEAD
-Readme
-=======
-# Readme
->>>>>>> 6a978067ac214ed68fb75faf94af3ce820fd8804
+# Implementação Fase Configuração
+
+O código neste repositório refere-se à fase de configuração, ou seja, a contratação pelo serviço e recebimentos dos parâmetros de autenticação. 
+
