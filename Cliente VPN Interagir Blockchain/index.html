@@ -1,23 +1,108 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Seleção de Conta para Pagamento</title>
     <script src="https://cdn.jsdelivr.net/npm/web3@1.5.2/dist/web3.min.js"></script>
     <script defer src="script.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 400px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #2d74da;
+        }
+
+        h2 {
+            text-align: center;
+            color: #555;
+        }
+
+        #accountSelect, #connectWallet, #deployContract {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+
+        #accountSelect {
+            background-color: #f9f9f9;
+        }
+
+        #connectWallet {
+            background-color: #2d74da;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        #connectWallet:hover {
+            background-color: #1a4f9b;
+        }
+
+        #deployContract {
+            background-color: #28a745;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        #deployContract:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        #deployContract:hover:enabled {
+            background-color: #218838;
+        }
+
+        #statusMessage, #statusContrato {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 16px;
+        }
+
+        #statusMessage {
+            color: #f44336; /* vermelho */
+        }
+
+        #statusContrato {
+            color: #28a745; /* verde */
+        }
+    </style>
 </head>
 <body>
-    <h1>Pagamento Serviço VPN</h1>
-
-    <h2>Selecione uma conta para realizar o pagamento</h2>
-    <select id="accountSelect">
-        <option value="">Conecte sua carteira para listar contas</option>
-    </select>
-    <button id="connectWallet">Conectar Carteira</button>
-    <div id="statusMessage" style="margin-top: 20px; color: red;"></div>
-    <button id="deployContract" disabled>Implementar Contrato e Enviar Pagamento</button>
-
-    <div id="statusContrato" style="margin-top: 20px; color: red;"></div>
+    <div class="container">
+        <h1>Pagamento Serviço VPN</h1>
+        <h2>Selecione uma conta para realizar o pagamento</h2>
+        <select id="accountSelect">
+            <option value="">Conecte sua carteira para listar contas</option>
+        </select>
+        <button id="connectWallet">Conectar Carteira</button>
+        <div id="statusMessage"></div>
+        <button id="deployContract" disabled>Implementar Contrato e Enviar Pagamento</button>
+        <div id="statusContrato"></div>
+    </div>
 </body>
 </html>

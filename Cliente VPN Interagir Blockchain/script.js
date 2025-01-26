@@ -76,7 +76,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const contractInfo = document.createElement("p");
             contractInfo.innerHTML = `<strong>Endereço do contrato:</strong> ${deployedContract.options.address}`;
-            document.body.appendChild(contractInfo);
+            const container = document.querySelector(".container");
+            container.appendChild(contractInfo);
+            
 
             // Enviando fundos para o contrato
             statusMessage.textContent = "Enviando fundos do pagamento pro contrato...";
