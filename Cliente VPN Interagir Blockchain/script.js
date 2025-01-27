@@ -7,6 +7,17 @@ document.addEventListener("DOMContentLoaded", () => {
     let selectedAccount = null;
     let deployedContract = null;
 
+    // Função para exibir a mensagem com estilo adequado
+    function showStatusMessage(message, type = "info") {
+        // Limpar as mensagens anteriores
+        statusMessage.classList.add("hidden");
+        setTimeout(() => {
+            statusMessage.classList.remove("hidden");
+            statusMessage.textContent = message;
+            statusMessage.className = `status-message ${type}-message`;
+        }, 500);  // Tempo para desaparecer a mensagem anterior antes de mostrar a nova
+    }
+
     connectWalletButton.addEventListener("click", async () => {
         if (typeof window.ethereum !== "undefined") {
             const web3 = new Web3(window.ethereum);
@@ -23,32 +34,27 @@ document.addEventListener("DOMContentLoaded", () => {
                     accountSelect.appendChild(option);
                 });
 
-                statusMessage.textContent = "Carteira conectada. Selecione uma conta.";
-                statusMessage.style.color = "green";
+                showStatusMessage("Carteira conectada. Selecione uma conta.", "success");
             } catch (error) {
                 console.error(error);
-                statusMessage.textContent = "Erro ao conectar a carteira: " + error.message;
-                statusMessage.style.color = "red";
+                showStatusMessage("Erro ao conectar a carteira: " + error.message, "error");
             }
         } else {
-            statusMessage.textContent = "MetaMask não encontrada. Instale a extensão para continuar.";
-            statusMessage.style.color = "red";
+            showStatusMessage("MetaMask não encontrada. Instale a extensão para continuar.", "error");
         }
     });
 
     accountSelect.addEventListener("change", (event) => {
         selectedAccount = event.target.value;
         if (selectedAccount) {
-            statusMessage.textContent = `Conta selecionada: ${selectedAccount}`;
-            statusMessage.style.color = "blue";
+            showStatusMessage(`Conta selecionada: ${selectedAccount}`, "info");
             deployContractButton.disabled = false;
         }
     });
 
     deployContractButton.addEventListener("click", async () => {
         if (!selectedAccount) {
-            statusMessage.textContent = "Por favor, selecione uma conta.";
-            statusMessage.style.color = "red";
+            showStatusMessage("Por favor, selecione uma conta.", "error");
             return;
         }
 
@@ -63,7 +69,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const contract = new web3.eth.Contract(abi);
             const deployTransaction = contract.deploy({ data: bytecode });
 
-            statusMessage.textContent = "Fazendo deploy do contrato...";
+            showStatusMessage("Fazendo deploy do contrato...", "info");
             const gasEstimate = await deployTransaction.estimateGas({ from: selectedAccount });
 
             deployedContract = await deployTransaction.send({
@@ -71,17 +77,15 @@ document.addEventListener("DOMContentLoaded", () => {
                 gas: gasEstimate,
             });
 
-            statusMessage.textContent = "Contrato implantado com sucesso!";
-            statusMessage.style.color = "green";
+            showStatusMessage("Contrato implantado com sucesso!", "success");
 
             const contractInfo = document.createElement("p");
             contractInfo.innerHTML = `<strong>Endereço do contrato:</strong> ${deployedContract.options.address}`;
             const container = document.querySelector(".container");
             container.appendChild(contractInfo);
-            
 
             // Enviando fundos para o contrato
-            statusMessage.textContent = "Enviando fundos do pagamento pro contrato...";
+            showStatusMessage("Enviando fundos do pagamento pro contrato...", "info");
             const amountInEther = "0.1"; // Valor em Ether
             const amountInWei = web3.utils.toWei(amountInEther, "ether");
 
@@ -91,22 +95,19 @@ document.addEventListener("DOMContentLoaded", () => {
                 value: amountInWei,
             });
 
-            statusMessage.textContent = `Fundos enviados com sucesso! Valor: ${amountInEther} Ether`;
-            statusMessage.style.color = "green";
+            showStatusMessage(`Fundos enviados com sucesso! Valor: ${amountInEther} Ether`, "success");
 
             // Enviando pagamento para VPN
-            statusMessage.textContent = "Enviando o pagamento do contrato para a VPN...";
+            showStatusMessage("Enviando o pagamento do contrato para a VPN...", "info");
             const vpnAddress = "0x858d28E95676a5e6F9894796b58aAD7020BfbF14";
             await deployedContract.methods
                 .transferPayment(vpnAddress, amountInWei)
                 .send({ from: selectedAccount });
 
-            statusMessage.textContent = "Pagamento enviado com sucesso!";
-            statusMessage.style.color = "green";
+            showStatusMessage("Pagamento enviado com sucesso!", "success");
         } catch (error) {
             console.error(error);
-            statusMessage.textContent = "Erro durante o processo: " + error.message;
-            statusMessage.style.color = "red";
+            showStatusMessage("Erro durante o processo: " + error.message, "error");
         }
     });
 });
