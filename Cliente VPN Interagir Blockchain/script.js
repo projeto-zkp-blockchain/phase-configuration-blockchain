@@ -145,7 +145,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             // Enviando fundos para o contrato
             showStatusMessage("Enviando fundos do pagamento pro contrato...", "info");
-            const amountInEther = "1"; // Valor em Ether
+            const amountInEther = "0.01"; // Valor em Ether
             const amountInWei = web3.utils.toWei(amountInEther, "ether");
 
             await web3.eth.sendTransaction({
@@ -171,6 +171,18 @@ document.addEventListener("DOMContentLoaded", () => {
                 console.log("Chave Pública X:", chaves.chavePublicaX);
                 console.log("Chave Pública Y:", chaves.chavePublicaY);
             }
+            const info_user = {
+                "Kuser": chaves.chavePrivada,
+                "Quser": {
+                    "x": chaves.chavePublicaX,
+                    "y": chaves.chavePublicaY
+                },
+                "pagamento":{
+                    "addressContract": deployedContract.options.address
+                }
+            }
+
+            console.log(info_user);
 
         } catch (error) {
             console.error(error);
