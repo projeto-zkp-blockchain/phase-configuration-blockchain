@@ -7,6 +7,62 @@ document.addEventListener("DOMContentLoaded", () => {
     let selectedAccount = null;
     let deployedContract = null;
 
+
+    function gerarChaves() {
+        function gerarChaves() {
+            // Verificar se a biblioteca foi carregada corretamente
+            if (typeof elliptic === 'undefined') {
+                console.error("A biblioteca elliptic não foi carregada corretamente.");
+                return null;
+            }
+            // Criar o gerador de chave elliptic com a curva secp256k1
+            const EC = elliptic.ec;
+            const ec = new EC('secp256k1'); // Usando a curva secp256k1
+            // Gerar o par de chaves
+            const chave = ec.genKeyPair();
+            // Obter a chave privada em formato hexadecimal
+            const chavePrivada = chave.getPrivate('hex');
+            // Obter a chave pública como coordenadas inteiras
+            const pontoPublico = chave.getPublic(); // Objeto de ponto público
+            const x = pontoPublico.getX().toString(); // Coordenada x
+            const y = pontoPublico.getY().toString(); // Coordenada y
+            // Retornar as chaves como um objeto
+            return {
+                chavePrivada: chavePrivada,
+                chavePublicaX: x,
+                chavePublicaY: y
+            };
+        }
+        
+        if (typeof elliptic === 'undefined') {
+            console.error("A biblioteca elliptic não foi carregada corretamente.");
+            return null;
+        }
+    
+        // Criar o gerador de chave elliptic com a curva secp256k1
+        const EC = elliptic.ec;
+        const ec = new EC('secp256k1'); // Usando a curva secp256k1
+    
+        // Gerar o par de chaves
+        const chave = ec.genKeyPair();
+    
+        // Obter a chave privada em formato hexadecimal
+        const chavePrivada = chave.getPrivate('hex');
+    
+        // Obter a chave pública como coordenadas inteiras
+        const pontoPublico = chave.getPublic(); // Objeto de ponto público
+        const x = pontoPublico.getX().toString(); // Coordenada x
+        const y = pontoPublico.getY().toString(); // Coordenada y
+    
+        // Retornar as chaves como um objeto
+        return {
+            chavePrivada: chavePrivada,
+            chavePublicaX: x,
+            chavePublicaY: y
+        };
+    }
+    
+
     // Função para exibir a mensagem com estilo adequado
     function showStatusMessage(message, type = "info") {
         // Limpar as mensagens anteriores
@@ -69,6 +125,9 @@ document.addEventListener("DOMContentLoaded", () => {
             const contract = new web3.eth.Contract(abi);
             const deployTransaction = contract.deploy({ data: bytecode });
 
+            accountSelect.disabled = true;
+            connectWallet.disabled = true;
+
             showStatusMessage("Fazendo deploy do contrato...", "info");
             const gasEstimate = await deployTransaction.estimateGas({ from: selectedAccount });
 
@@ -86,7 +145,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             // Enviando fundos para o contrato
             showStatusMessage("Enviando fundos do pagamento pro contrato...", "info");
-            const amountInEther = "0.1"; // Valor em Ether
+            const amountInEther = "1"; // Valor em Ether
             const amountInWei = web3.utils.toWei(amountInEther, "ether");
 
             await web3.eth.sendTransaction({
@@ -99,12 +158,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
             // Enviando pagamento para VPN
             showStatusMessage("Enviando o pagamento do contrato para a VPN...", "info");
-            const vpnAddress = "0x858d28E95676a5e6F9894796b58aAD7020BfbF14";
+            const vpnAddress = "0x299f06124F7edd479eC68c03Dc5f5634dA135A53";
             await deployedContract.methods
                 .transferPayment(vpnAddress, amountInWei)
                 .send({ from: selectedAccount });
 
             showStatusMessage("Pagamento enviado com sucesso!", "success");
+
+            const chaves = gerarChaves();
+            if (chaves) {
+                console.log("Chave Privada (hex):", chaves.chavePrivada);
+                console.log("Chave Pública X:", chaves.chavePublicaX);
+                console.log("Chave Pública Y:", chaves.chavePublicaY);
+            }
+
         } catch (error) {
             console.error(error);
             showStatusMessage("Erro durante o processo: " + error.message, "error");
