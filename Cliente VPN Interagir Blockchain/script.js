@@ -6,6 +6,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
     let selectedAccount = null;
     let deployedContract = null;
+    let selectedOption = null;
+    const options = [
+        { label: "1 mês", usd: 30 },
+        { label: "3 meses", usd: 80 },
+        { label: "6 meses", usd: 150 },
+        { label: "1 ano", usd: 200 },
+    ];
 
 
     function gerarChaves() {
@@ -33,27 +40,27 @@ document.addEventListener("DOMContentLoaded", () => {
                 chavePublicaY: y
             };
         }
-        
+
         if (typeof elliptic === 'undefined') {
             console.error("A biblioteca elliptic não foi carregada corretamente.");
             return null;
         }
-    
+
         // Criar o gerador de chave elliptic com a curva secp256k1
         const EC = elliptic.ec;
         const ec = new EC('secp256k1'); // Usando a curva secp256k1
-    
+
         // Gerar o par de chaves
         const chave = ec.genKeyPair();
-    
+
         // Obter a chave privada em formato hexadecimal
         const chavePrivada = chave.getPrivate('hex');
-    
+
         // Obter a chave pública como coordenadas inteiras
         const pontoPublico = chave.getPublic(); // Objeto de ponto público
         const x = pontoPublico.getX().toString(); // Coordenada x
         const y = pontoPublico.getY().toString(); // Coordenada y
-    
+
         // Retornar as chaves como um objeto
         return {
             chavePrivada: chavePrivada,
@@ -61,7 +68,7 @@ document.addEventListener("DOMContentLoaded", () => {
             chavePublicaY: y
         };
     }
-    
+
 
     // Função para exibir a mensagem com estilo adequado
     function showStatusMessage(message, type = "info") {
@@ -107,6 +114,64 @@ document.addEventListener("DOMContentLoaded", () => {
             deployContractButton.disabled = false;
         }
     });
+
+    //---------------Converter Dolar pra ETH
+
+    async function getEthereumPriceInUSD() {
+        try {
+            const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');
+            const data = await response.json();
+            return data.ethereum.usd;
+        } catch (error) {
+            console.error('Erro ao buscar a cotação do Ethereum:', error);
+            return null;
+        }
+    }
+
+    async function populateOptions() {
+        const ethPriceInUSD = await getEthereumPriceInUSD();
+        const timeSelection = document.getElementById('timeSelection');
+
+        if (ethPriceInUSD) {
+            options.forEach(option => {
+                const ethAmount = (option.usd / ethPriceInUSD).toFixed(6);
+                const optionElement = document.createElement('option');
+                optionElement.value = option.usd;
+                optionElement.textContent = `${option.label} - $${option.usd} (${ethAmount} ETH)`;
+                timeSelection.appendChild(optionElement);
+            });
+        } else {
+            timeSelection.innerHTML = "<option value=''>Erro ao carregar cotações</option>";
+        }
+    }
+
+    document.getElementById('timeSelection').addEventListener('change', function () {
+        const selectedIndex = this.selectedIndex;
+        if (selectedIndex > 0) {
+            selectedOption = options[selectedIndex - 1]; // Armazena a opção selecionada
+            console.log("Opção selecionada:", selectedOption);
+        }
+    });
+
+    async function convertUsdToEth() {
+        if (!selectedOption) {
+            document.getElementById('result').innerText = 'Por favor, selecione uma opção válida.';
+            return;
+        }
+
+        const ethPriceInUSD = await getEthereumPriceInUSD();
+        if (ethPriceInUSD) {
+            const ethAmount = selectedOption.usd / ethPriceInUSD;
+            document.getElementById('result').innerText = `Valor em Ethereum: ${ethAmount.toFixed(6)} ETH`;
+        } else {
+            document.getElementById('result').innerText = 'Erro ao obter a cotação do Ethereum.';
+        }
+    }
+
+    window.onload = populateOptions;
+
+    //--------------Fim Converter Dolar pra ETH
+
 
     deployContractButton.addEventListener("click", async () => {
         if (!selectedAccount) {
@@ -158,7 +223,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             // Enviando pagamento para VPN
             showStatusMessage("Enviando o pagamento do contrato para a VPN...", "info");
-            const vpnAddress = "0x299f06124F7edd479eC68c03Dc5f5634dA135A53";
+            const vpnAddress = "0x98b12c4df09135287E84f9d3Fbe11Ce5469E353b";
             await deployedContract.methods
                 .transferPayment(vpnAddress, amountInWei)
                 .send({ from: selectedAccount });
@@ -177,7 +242,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     "x": chaves.chavePublicaX,
                     "y": chaves.chavePublicaY
                 },
-                "pagamento":{
+                "pagamento": {
                     "addressContract": deployedContract.options.address
                 }
             }
