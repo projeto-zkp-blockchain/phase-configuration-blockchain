@@ -14,6 +14,15 @@ document.addEventListener("DOMContentLoaded", () => {
         { label: "1 ano", usd: 200 },
     ];
 
+    // Função para baixar o arquivo JSON
+    function baixarJSON(info_user) {
+        const jsonString = JSON.stringify(info_user, null, 2);  // Converte o objeto para string JSON
+        const blob = new Blob([jsonString], { type: "application/json" });  // Cria um Blob com o tipo MIME 'application/json'
+        const link = document.createElement("a");  // Cria um link
+        link.href = URL.createObjectURL(blob);  // Cria uma URL para o Blob
+        link.download = "info_user.json";  // Define o nome do arquivo a ser baixado
+        link.click();  // Simula o clique no link para iniciar o download
+    }
 
     function gerarChaves() {
         function gerarChaves() {
@@ -117,61 +126,62 @@ document.addEventListener("DOMContentLoaded", () => {
 
     //---------------Converter Dolar pra ETH
 
-    async function getEthereumPriceInUSD() {
-        try {
-            const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');
-            const data = await response.json();
-            return data.ethereum.usd;
-        } catch (error) {
-            console.error('Erro ao buscar a cotação do Ethereum:', error);
-            return null;
+    /* 
+        async function getEthereumPriceInUSD() {
+            try {
+                const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');
+                const data = await response.json();
+                return data.ethereum.usd;
+            } catch (error) {
+                console.error('Erro ao buscar a cotação do Ethereum:', error);
+                return null;
+            }
         }
-    }
-
-    async function populateOptions() {
-        const ethPriceInUSD = await getEthereumPriceInUSD();
-        const timeSelection = document.getElementById('timeSelection');
-
-        if (ethPriceInUSD) {
-            options.forEach(option => {
-                const ethAmount = (option.usd / ethPriceInUSD).toFixed(6);
-                const optionElement = document.createElement('option');
-                optionElement.value = option.usd;
-                optionElement.textContent = `${option.label} - $${option.usd} (${ethAmount} ETH)`;
-                timeSelection.appendChild(optionElement);
-            });
-        } else {
-            timeSelection.innerHTML = "<option value=''>Erro ao carregar cotações</option>";
+    
+        async function populateOptions() {
+            const ethPriceInUSD = await getEthereumPriceInUSD();
+            const timeSelection = document.getElementById('timeSelection');
+    
+            if (ethPriceInUSD) {
+                options.forEach(option => {
+                    const ethAmount = (option.usd / ethPriceInUSD).toFixed(6);
+                    const optionElement = document.createElement('option');
+                    optionElement.value = option.usd;
+                    optionElement.textContent = `${option.label} - $${option.usd} (${ethAmount} ETH)`;
+                    timeSelection.appendChild(optionElement);
+                });
+            } else {
+                timeSelection.innerHTML = "<option value=''>Erro ao carregar cotações</option>";
+            }
         }
-    }
-
-    document.getElementById('timeSelection').addEventListener('change', function () {
-        const selectedIndex = this.selectedIndex;
-        if (selectedIndex > 0) {
-            selectedOption = options[selectedIndex - 1]; // Armazena a opção selecionada
-            console.log("Opção selecionada:", selectedOption);
+    
+        document.getElementById('timeSelection').addEventListener('change', function () {
+            const selectedIndex = this.selectedIndex;
+            if (selectedIndex > 0) {
+                selectedOption = options[selectedIndex - 1]; // Armazena a opção selecionada
+                console.log("Opção selecionada:", selectedOption);
+            }
+        });
+    
+        async function convertUsdToEth() {
+            if (!selectedOption) {
+                document.getElementById('result').innerText = 'Por favor, selecione uma opção válida.';
+                return;
+            }
+    
+            const ethPriceInUSD = await getEthereumPriceInUSD();
+            if (ethPriceInUSD) {
+                const ethAmount = selectedOption.usd / ethPriceInUSD;
+                document.getElementById('result').innerText = `Valor em Ethereum: ${ethAmount.toFixed(6)} ETH`;
+            } else {
+                document.getElementById('result').innerText = 'Erro ao obter a cotação do Ethereum.';
+            }
         }
-    });
-
-    async function convertUsdToEth() {
-        if (!selectedOption) {
-            document.getElementById('result').innerText = 'Por favor, selecione uma opção válida.';
-            return;
-        }
-
-        const ethPriceInUSD = await getEthereumPriceInUSD();
-        if (ethPriceInUSD) {
-            const ethAmount = selectedOption.usd / ethPriceInUSD;
-            document.getElementById('result').innerText = `Valor em Ethereum: ${ethAmount.toFixed(6)} ETH`;
-        } else {
-            document.getElementById('result').innerText = 'Erro ao obter a cotação do Ethereum.';
-        }
-    }
-
-    window.onload = populateOptions;
+    
+        window.onload = populateOptions;
+    */
 
     //--------------Fim Converter Dolar pra ETH
-
 
     deployContractButton.addEventListener("click", async () => {
         if (!selectedAccount) {
@@ -204,9 +214,8 @@ document.addEventListener("DOMContentLoaded", () => {
             showStatusMessage("Contrato implantado com sucesso!", "success");
 
             const contractInfo = document.createElement("p");
-            contractInfo.innerHTML = `<strong>Endereço do contrato:</strong> ${deployedContract.options.address}`;
-            const container = document.querySelector(".container");
-            container.appendChild(contractInfo);
+            contractInfo.innerHTML = `<strong>Endereço do contrato:</strong> ${deployedContract.options.address}<br>`;
+            document.querySelector(".container").appendChild(contractInfo);
 
             // Enviando fundos para o contrato
             showStatusMessage("Enviando fundos do pagamento pro contrato...", "info");
@@ -223,35 +232,88 @@ document.addEventListener("DOMContentLoaded", () => {
 
             // Enviando pagamento para VPN
             showStatusMessage("Enviando o pagamento do contrato para a VPN...", "info");
-            const vpnAddress = "0x98b12c4df09135287E84f9d3Fbe11Ce5469E353b";
-            await deployedContract.methods
+            const vpnAddress = "0xc4EC580F6cF1B62CF84D54A3CCA2675F46316479";
+
+            const tx = await deployedContract.methods
                 .transferPayment(vpnAddress, amountInWei)
                 .send({ from: selectedAccount });
 
+            console.log("Transação confirmada:", tx);
+
+            const receiptCode = await deployedContract.methods.getReceiptCode().call({ from: selectedAccount });
+
+            console.log("ReceiptCode:", receiptCode);
+
             showStatusMessage("Pagamento enviado com sucesso!", "success");
 
+            // Gerando as chaves
             const chaves = gerarChaves();
             if (chaves) {
                 console.log("Chave Privada (hex):", chaves.chavePrivada);
                 console.log("Chave Pública X:", chaves.chavePublicaX);
                 console.log("Chave Pública Y:", chaves.chavePublicaY);
             }
-            const info_user = {
-                "Kuser": chaves.chavePrivada,
-                "Quser": {
-                    "x": chaves.chavePublicaX,
-                    "y": chaves.chavePublicaY
-                },
-                "pagamento": {
-                    "addressContract": deployedContract.options.address
-                }
-            }
 
-            console.log(info_user);
+            const url = "http://127.0.0.1:5000/verificarPagamento"; // Atualize se necessário
+
+            const data = {
+                addressContract: deployedContract.options.address,  // Endereço do contrato
+                receiptCode: receiptCode,  // Código do recibo
+                Quser: {
+                    x: chaves.chavePublicaX,
+                    y: chaves.chavePublicaY
+                }
+            };
+
+            fetch(url, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(data)
+            })
+                .then(response => response.json())
+                .then(result => {
+                    console.log("Resposta do servidor:", result);
+
+                    if (result === false) {
+                        console.log("❌ Pagamento não encontrado.");
+                    } else {
+                        contractInfo.innerHTML += `<br>✅ Pagamento verificado com sucesso!<br>`;
+                        //contractInfo.innerHTML += `<strong>ID User:</strong> ${result.IDuser}<br>`;
+                        console.log("✅ Pagamento verificado com sucesso!");
+
+                        // Agora você pode usar o IDuser aqui
+                        const info_user = {
+                            "IDuser": result.IDuser,  // Usando diretamente o IDuser recebido da resposta
+                            "Kuser": chaves.chavePrivada,
+                            "Quser": {
+                                "x": chaves.chavePublicaX,
+                                "y": chaves.chavePublicaY
+                            },
+                            "pagamento": {
+                                "addressContract": deployedContract.options.address,
+                                "receiptCode": receiptCode
+                            }
+                        };
+
+                        console.log("Informações do usuário:", info_user);
+
+                        baixarJSON(info_user);
+                        contractInfo.innerHTML += `<br>✅ Informações de autenticação baixadas!<br>`;
+                    }
+                })
+                .catch(error => {
+                    console.error("Erro ao enviar requisição:", error);
+                });
 
         } catch (error) {
             console.error(error);
             showStatusMessage("Erro durante o processo: " + error.message, "error");
         }
     });
+
+
+
+
 });
