@@ -14,6 +14,28 @@ document.addEventListener("DOMContentLoaded", () => {
         { label: "1 ano", usd: 200 },
     ];
 
+    //const temposExecucao = JSON.parse(localStorage.getItem("temposExecucao")) || {};
+
+    function medirTempo(nome, callback) {
+        const inicio = performance.now();
+        callback(); // Executa o código alvo
+        const fim = performance.now();
+
+        temposExecucao[nome] = (fim - inicio).toFixed(2) + " ms"; // Registra o tempo
+
+        // Salva os dados no localStorage
+        localStorage.setItem("temposExecucao", JSON.stringify(temposExecucao));
+    }
+
+    // Função para baixar os tempos como JSON
+    function baixarTempos() {
+        const blob = new Blob([JSON.stringify(temposExecucao, null, 2)], { type: "application/json" });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "tempos.json";
+        a.click();
+    }
+
     // Função para baixar o arquivo JSON
     function baixarJSON(info_user) {
         const jsonString = JSON.stringify(info_user, null, 2);  // Converte o objeto para string JSON
@@ -183,6 +205,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     //--------------Fim Converter Dolar pra ETH
 
+    const contractInfo = document.createElement("p");
+    document.querySelector(".container").appendChild(contractInfo);
+
     deployContractButton.addEventListener("click", async () => {
         if (!selectedAccount) {
             showStatusMessage("Por favor, selecione uma conta.", "error");
@@ -204,47 +229,97 @@ document.addEventListener("DOMContentLoaded", () => {
             connectWallet.disabled = true;
 
             showStatusMessage("Fazendo deploy do contrato...", "info");
+
             const gasEstimate = await deployTransaction.estimateGas({ from: selectedAccount });
+
+            let envioDeploy, fimDeploy, tempoDeploy;
+
+            let temposExecucao;
 
             deployedContract = await deployTransaction.send({
                 from: selectedAccount,
                 gas: gasEstimate,
-            });
+            })
+                .on('transactionHash', (hash) => {
+                    console.log("Transação enviada, aguardando mineração...", hash);
+                    envioDeploy = performance.now(); // Tempo exato do envio
+                })
+                .once('receipt', (receipt) => {
+                    fimDeploy = performance.now(); // Tempo da confirmação
+                    tempoDeploy = ((fimDeploy - envioDeploy) / 1000).toFixed(4) + " s"; // Em segundos
 
-            showStatusMessage("Contrato implantado com sucesso!", "success");
+                    temposExecucao = JSON.parse(localStorage.getItem(`tempos_${receipt.contractAddress}`)) || {};
 
-            const contractInfo = document.createElement("p");
-            contractInfo.innerHTML = `<strong>Endereço do contrato:</strong> ${deployedContract.options.address}<br>`;
-            document.querySelector(".container").appendChild(contractInfo);
+                    temposExecucao["Tempo Deploy Contrato"] = tempoDeploy;
+                    console.log("Tempo real de deploy:", tempoDeploy);
+
+                    // Salva no localStorage com o endereço do contrato
+                    localStorage.setItem(`tempos_${receipt.contractAddress}`, JSON.stringify(temposExecucao));
+
+                    showStatusMessage("Contrato implantado com sucesso!", "success");
+
+                    contractInfo.innerHTML = `<strong>Endereço do contrato:</strong> ${receipt.contractAddress}<br>`;
+
+                });
 
             // Enviando fundos para o contrato
-            showStatusMessage("Enviando fundos do pagamento pro contrato...", "info");
-            const amountInEther = "0.01"; // Valor em Ether
+            showStatusMessage("Enviando fundos do pagamento para o contrato...", "info");
+            const amountInEther = "0.01";
             const amountInWei = web3.utils.toWei(amountInEther, "ether");
+
+            let envioPagamentoContrato, fimPagamentoContrato, tempoPagamentoContrato;
 
             await web3.eth.sendTransaction({
                 from: selectedAccount,
                 to: deployedContract.options.address,
                 value: amountInWei,
-            });
+            })
+                .on('transactionHash', (hash) => {
+                    console.log("Transação enviada, aguardando mineração...", hash);
+                    envioPagamentoContrato = performance.now();
+                })
+                .once('receipt', (receipt) => {
+                    fimPagamentoContrato = performance.now();
+                    tempoPagamentoContrato = ((fimPagamentoContrato - envioPagamentoContrato) / 1000).toFixed(4) + " s";
 
-            showStatusMessage(`Fundos enviados com sucesso! Valor: ${amountInEther} Ether`, "success");
+                    temposExecucao["Tempo Transação para o Contrato"] = tempoPagamentoContrato;
+                    console.log("Tempo real Transação para o Contrato:", tempoPagamentoContrato);
+
+                    localStorage.setItem(`tempos_${deployedContract.options.address}`, JSON.stringify(temposExecucao));
+
+                    showStatusMessage(`Fundos enviados com sucesso! Valor: ${amountInEther} Ether`, "success");
+                });
 
             // Enviando pagamento para VPN
             showStatusMessage("Enviando o pagamento do contrato para a VPN...", "info");
-            const vpnAddress = "0xc4EC580F6cF1B62CF84D54A3CCA2675F46316479";
+            const vpnAddress = "0x954093e7dd04F5a10F9c35FCBdBF66BADf4364bE";
+
+            let envioVPN, fimVPN, tempoVPN;
 
             const tx = await deployedContract.methods
                 .transferPayment(vpnAddress, amountInWei)
-                .send({ from: selectedAccount });
+                .send({ from: selectedAccount })
+                .on('transactionHash', (hash) => {
+                    console.log("Transação para VPN enviada, aguardando mineração...", hash);
+                    envioVPN = performance.now();
+                })
+                .once('receipt', (receipt) => {
+                    fimVPN = performance.now();
+                    tempoVPN = ((fimVPN - envioVPN) / 1000).toFixed(4) + " s";
+
+                    temposExecucao["Tempo Transação do Contrato Para a VPN"] = tempoVPN;
+                    console.log("Tempo real Transação do Contrato Para a VPN:", tempoVPN);
+
+                    localStorage.setItem(`tempos_${deployedContract.options.address}`, JSON.stringify(temposExecucao));
+
+                    showStatusMessage("Pagamento enviado com sucesso!", "success");
+                });
 
             console.log("Transação confirmada:", tx);
 
             const receiptCode = await deployedContract.methods.getReceiptCode().call({ from: selectedAccount });
 
             console.log("ReceiptCode:", receiptCode);
-
-            showStatusMessage("Pagamento enviado com sucesso!", "success");
 
             // Gerando as chaves
             const chaves = gerarChaves();
@@ -254,11 +329,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 console.log("Chave Pública Y:", chaves.chavePublicaY);
             }
 
-            const url = "http://127.0.0.1:5000/verificarPagamento"; // Atualize se necessário
+            const url = "http://127.0.0.1:5000/verificarPagamento";
 
             const data = {
-                addressContract: deployedContract.options.address,  // Endereço do contrato
-                receiptCode: receiptCode,  // Código do recibo
+                addressContract: deployedContract.options.address,
+                receiptCode: receiptCode,
                 Quser: {
                     x: chaves.chavePublicaX,
                     y: chaves.chavePublicaY
@@ -267,40 +342,39 @@ document.addEventListener("DOMContentLoaded", () => {
 
             fetch(url, {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(data)
             })
                 .then(response => response.json())
                 .then(result => {
                     console.log("Resposta do servidor:", result);
 
-                    if (result === false) {
+                    if (!result) {
                         console.log("❌ Pagamento não encontrado.");
                     } else {
-                        contractInfo.innerHTML += `<br>✅ Pagamento verificado com sucesso!<br>`;
-                        //contractInfo.innerHTML += `<strong>ID User:</strong> ${result.IDuser}<br>`;
-                        console.log("✅ Pagamento verificado com sucesso!");
 
-                        // Agora você pode usar o IDuser aqui
+                        contractInfo.innerHTML += `<br>✅ Pagamento verificado com sucesso!<br>`;
+                        //showStatusMessage("✅ Pagamento verificado com sucesso!", "success");
+
                         const info_user = {
-                            "IDuser": result.IDuser,  // Usando diretamente o IDuser recebido da resposta
-                            "Kuser": chaves.chavePrivada,
-                            "Quser": {
-                                "x": chaves.chavePublicaX,
-                                "y": chaves.chavePublicaY
+                            IDuser: result.IDuser,
+                            Kuser: chaves.chavePrivada,
+                            Quser: {
+                                x: chaves.chavePublicaX,
+                                y: chaves.chavePublicaY
                             },
-                            "pagamento": {
-                                "addressContract": deployedContract.options.address,
-                                "receiptCode": receiptCode
+                            pagamento: {
+                                addressContract: deployedContract.options.address,
+                                receiptCode: receiptCode
                             }
                         };
 
                         console.log("Informações do usuário:", info_user);
 
                         baixarJSON(info_user);
+
                         contractInfo.innerHTML += `<br>✅ Informações de autenticação baixadas!<br>`;
+                        //showStatusMessage("✅ Informações de autenticação baixadas!", "success");
                     }
                 })
                 .catch(error => {
@@ -312,7 +386,6 @@ document.addEventListener("DOMContentLoaded", () => {
             showStatusMessage("Erro durante o processo: " + error.message, "error");
         }
     });
-
 
 
 
