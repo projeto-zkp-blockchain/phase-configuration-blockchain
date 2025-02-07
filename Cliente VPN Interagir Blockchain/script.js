@@ -250,7 +250,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
                     temposExecucao = JSON.parse(localStorage.getItem(`tempos_${receipt.contractAddress}`)) || {};
 
-                    temposExecucao["Tempo Deploy Contrato"] = tempoDeploy;
+                    temposExecucao["1 - Tempo Deploy Contrato"] = tempoDeploy;
                     console.log("Tempo real de deploy:", tempoDeploy);
 
                     // Salva no localStorage com o endereço do contrato
@@ -264,7 +264,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             // Enviando fundos para o contrato
             showStatusMessage("Enviando fundos do pagamento para o contrato...", "info");
-            const amountInEther = "0.01";
+            const amountInEther = "0.001";
             const amountInWei = web3.utils.toWei(amountInEther, "ether");
 
             let envioPagamentoContrato, fimPagamentoContrato, tempoPagamentoContrato;
@@ -282,7 +282,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     fimPagamentoContrato = performance.now();
                     tempoPagamentoContrato = ((fimPagamentoContrato - envioPagamentoContrato) / 1000).toFixed(4) + " s";
 
-                    temposExecucao["Tempo Transação para o Contrato"] = tempoPagamentoContrato;
+                    temposExecucao["2 - Tempo Transação para o Contrato"] = tempoPagamentoContrato;
                     console.log("Tempo real Transação para o Contrato:", tempoPagamentoContrato);
 
                     localStorage.setItem(`tempos_${deployedContract.options.address}`, JSON.stringify(temposExecucao));
@@ -292,7 +292,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             // Enviando pagamento para VPN
             showStatusMessage("Enviando o pagamento do contrato para a VPN...", "info");
-            const vpnAddress = "0x954093e7dd04F5a10F9c35FCBdBF66BADf4364bE";
+            const vpnAddress = "0xdCcEEd9A4b102093bB0eC1e81a0969d9BB6b55a2";
 
             let envioVPN, fimVPN, tempoVPN;
 
@@ -307,7 +307,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     fimVPN = performance.now();
                     tempoVPN = ((fimVPN - envioVPN) / 1000).toFixed(4) + " s";
 
-                    temposExecucao["Tempo Transação do Contrato Para a VPN"] = tempoVPN;
+                    temposExecucao["3 - Tempo Transação do Contrato Para a VPN"] = tempoVPN;
                     console.log("Tempo real Transação do Contrato Para a VPN:", tempoVPN);
 
                     localStorage.setItem(`tempos_${deployedContract.options.address}`, JSON.stringify(temposExecucao));
@@ -317,12 +317,28 @@ document.addEventListener("DOMContentLoaded", () => {
 
             console.log("Transação confirmada:", tx);
 
+            // Medindo o tempo para obter o receiptCode
+            let inicioReceiptCode = performance.now();
             const receiptCode = await deployedContract.methods.getReceiptCode().call({ from: selectedAccount });
+            let fimReceiptCode = performance.now();
+            let tempoReceiptCode = ((fimReceiptCode - inicioReceiptCode) / 1000).toFixed(4) + " s";
+
+            temposExecucao["4 - Tempo Obtenção ReceiptCode"] = tempoReceiptCode;
+            console.log("Tempo real Obtenção ReceiptCode:", tempoReceiptCode);
+            localStorage.setItem(`tempos_${deployedContract.options.address}`, JSON.stringify(temposExecucao));
 
             console.log("ReceiptCode:", receiptCode);
 
-            // Gerando as chaves
+            // Medindo o tempo de geração das chaves
+            let inicioGeracaoChaves = performance.now();
             const chaves = gerarChaves();
+            let fimGeracaoChaves = performance.now();
+            let tempoGeracaoChaves = ((fimGeracaoChaves - inicioGeracaoChaves) / 1000).toFixed(4) + " s";
+
+            temposExecucao["5 - Tempo Geração de Chaves"] = tempoGeracaoChaves;
+            console.log("Tempo real Geração de Chaves:", tempoGeracaoChaves);
+            localStorage.setItem(`tempos_${deployedContract.options.address}`, JSON.stringify(temposExecucao));
+
             if (chaves) {
                 console.log("Chave Privada (hex):", chaves.chavePrivada);
                 console.log("Chave Pública X:", chaves.chavePublicaX);
@@ -340,6 +356,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
             };
 
+            let inicioVerificacaoPagamento = performance.now();
+
             fetch(url, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -347,6 +365,14 @@ document.addEventListener("DOMContentLoaded", () => {
             })
                 .then(response => response.json())
                 .then(result => {
+
+                    let fimVerificacaoPagamento = performance.now();
+                    let tempoVerificacaoPagamento = ((fimVerificacaoPagamento - inicioVerificacaoPagamento) / 1000).toFixed(4) + " s";
+
+                    temposExecucao["6 - Tempo Verificação Pagamento"] = tempoVerificacaoPagamento;
+                    console.log("Tempo real Verificação Pagamento:", tempoVerificacaoPagamento);
+                    localStorage.setItem(`tempos_${deployedContract.options.address}`, JSON.stringify(temposExecucao));
+
                     console.log("Resposta do servidor:", result);
 
                     if (!result) {

@@ -8,8 +8,9 @@ from flask_cors import CORS
 app = Flask(__name__)
 CORS(app)
 
-# Configurar a conexão com a blockchain
+# Configurar a conexão com a blockchain         
 #rpc_url = "https://holesky.drpc.org"  # Substitua com a URL do seu nó
+#rpc_url = "https://ethereum-sepolia-rpc.publicnode.com"  # Substitua com a URL do seu nó
 rpc_url = "HTTP://127.0.0.1:7545"  # Substitua com a URL do seu nó
 web3 = Web3(Web3.HTTPProvider(rpc_url))
 
