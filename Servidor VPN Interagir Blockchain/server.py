@@ -3,6 +3,9 @@ from web3 import Web3
 import hashlib
 from eth_hash.auto import keccak
 from flask_cors import CORS
+import os
+import json
+import time
 
 
 app = Flask(__name__)
@@ -45,6 +48,31 @@ def generate_hash_value(receipt_code: str, amount: int, timestamp: int) -> str:
     return keccak(data).hex()  # Adiciona prefixo 0x para compatibilidade
 
 
+def salvar_json(dados, arquivo_json="usuarios.json"):
+    """ Salva os dados da transação no arquivo JSON dentro do diretório do script """
+
+    # Obtém o diretório onde o script está localizado
+    diretorio_script = os.path.dirname(os.path.abspath(__file__))  
+    caminho_arquivo = os.path.join(diretorio_script, arquivo_json)  
+
+    # Verifica se o arquivo já existe e carrega os dados existentes
+    registros = []
+    if os.path.exists(caminho_arquivo):
+        try:
+            with open(caminho_arquivo, "r") as f:
+                registros = json.load(f)
+        except (json.JSONDecodeError, FileNotFoundError):
+            print("⚠️ Erro ao ler JSON. Criando um novo arquivo.")
+
+    # Adiciona os novos dados
+    registros.append(dados)
+
+    # Salva o JSON no mesmo diretório do script
+    with open(caminho_arquivo, "w") as f:
+        json.dump(registros, f, indent=4)
+
+    print(f"✅ Dados salvos em {caminho_arquivo}")
+
 @app.route('/verificarPagamento', methods=['POST'])
 def verificar_pagamento():
     data = request.get_json()
@@ -52,6 +80,8 @@ def verificar_pagamento():
     receiptCode = data["receiptCode"]
     Quser_x = data["Quser"]["x"]
     Quser_y = data["Quser"]["y"]
+
+    start_time = time.time()  # Inicia a contagem do tempo de verificação
 
     # Definir o intervalo de busca (últimos 100 blocos)
     start_block = max(0, web3.eth.block_number - 100)
@@ -84,6 +114,28 @@ def verificar_pagamento():
         print("Hash Value Calculado:", hash_value)
 
         IDuser = H(str(Quser_x), str(Quser_y))
+
+        tempoVerificacao = time.time() - start_time  # Calcula o tempo de verificação
+
+        pagamento_info = {
+            "IDuser": str(IDuser),
+            "Quser": {
+                "x": str(Quser_x),
+                "y": str(Quser_y)
+            },
+            "pagamento": {
+                "addressContract": addressContract,
+                "receiptCode": receiptCode,
+                "blockNumber": event["blockNumber"],
+                "amount": f"{web3.from_wei(amount, 'ether')} ETH",
+                "hashValue": hashValue_event,
+                "timestamp": timestamp
+            },
+            "tempoVerificacao": tempoVerificacao
+        }
+
+        # Salvar os dados no JSON
+        salvar_json(pagamento_info)
 
         if hashValue_event == hash_value:
             return jsonify({'IDuser': str(IDuser)})
