@@ -6,34 +6,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
     let selectedAccount = null;
     let deployedContract = null;
-    let selectedOption = null;
-    const options = [
-        { label: "1 mês", usd: 30 },
-        { label: "3 meses", usd: 80 },
-        { label: "6 meses", usd: 150 },
-        { label: "1 ano", usd: 200 },
-    ];
 
-    //const temposExecucao = JSON.parse(localStorage.getItem("temposExecucao")) || {};
-
-    function medirTempo(nome, callback) {
-        const inicio = performance.now();
-        callback(); // Executa o código alvo
-        const fim = performance.now();
-
-        temposExecucao[nome] = (fim - inicio).toFixed(2) + " ms"; // Registra o tempo
-
-        // Salva os dados no localStorage
-        localStorage.setItem("temposExecucao", JSON.stringify(temposExecucao));
-    }
-
-    // Função para baixar os tempos como JSON
-    function baixarTempos() {
-        const blob = new Blob([JSON.stringify(temposExecucao, null, 2)], { type: "application/json" });
-        const a = document.createElement("a");
-        a.href = URL.createObjectURL(blob);
-        a.download = "tempos.json";
-        a.click();
+    function formatarDataBrasileira(data) {
+        return data.toLocaleString('pt-BR', {
+            timeZone: 'America/Sao_Paulo', // Fuso horário brasileiro
+            hour12: false // Formato de 24 horas
+        });
     }
 
     // Função para baixar o arquivo JSON
@@ -146,64 +124,17 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    //---------------Converter Dolar pra ETH
-
-    /* 
-        async function getEthereumPriceInUSD() {
-            try {
-                const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');
-                const data = await response.json();
-                return data.ethereum.usd;
-            } catch (error) {
-                console.error('Erro ao buscar a cotação do Ethereum:', error);
-                return null;
-            }
+    // Função para obter o preço do ETH em USD da CoinGecko
+    async function getETHPrice() {
+        try {
+            const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');
+            const data = await response.json();
+            return data.ethereum.usd; // Retorna o preço do Ethereum em USD
+        } catch (error) {
+            console.error("Erro ao buscar o preço do ETH:", error);
+            return null; // Retorna null em caso de erro
         }
-    
-        async function populateOptions() {
-            const ethPriceInUSD = await getEthereumPriceInUSD();
-            const timeSelection = document.getElementById('timeSelection');
-    
-            if (ethPriceInUSD) {
-                options.forEach(option => {
-                    const ethAmount = (option.usd / ethPriceInUSD).toFixed(6);
-                    const optionElement = document.createElement('option');
-                    optionElement.value = option.usd;
-                    optionElement.textContent = `${option.label} - $${option.usd} (${ethAmount} ETH)`;
-                    timeSelection.appendChild(optionElement);
-                });
-            } else {
-                timeSelection.innerHTML = "<option value=''>Erro ao carregar cotações</option>";
-            }
-        }
-    
-        document.getElementById('timeSelection').addEventListener('change', function () {
-            const selectedIndex = this.selectedIndex;
-            if (selectedIndex > 0) {
-                selectedOption = options[selectedIndex - 1]; // Armazena a opção selecionada
-                console.log("Opção selecionada:", selectedOption);
-            }
-        });
-    
-        async function convertUsdToEth() {
-            if (!selectedOption) {
-                document.getElementById('result').innerText = 'Por favor, selecione uma opção válida.';
-                return;
-            }
-    
-            const ethPriceInUSD = await getEthereumPriceInUSD();
-            if (ethPriceInUSD) {
-                const ethAmount = selectedOption.usd / ethPriceInUSD;
-                document.getElementById('result').innerText = `Valor em Ethereum: ${ethAmount.toFixed(6)} ETH`;
-            } else {
-                document.getElementById('result').innerText = 'Erro ao obter a cotação do Ethereum.';
-            }
-        }
-    
-        window.onload = populateOptions;
-    */
-
-    //--------------Fim Converter Dolar pra ETH
+    }
 
     const contractInfo = document.createElement("p");
     document.querySelector(".container").appendChild(contractInfo);
@@ -228,6 +159,7 @@ document.addEventListener("DOMContentLoaded", () => {
             accountSelect.disabled = true;
             connectWallet.disabled = true;
 
+            // Fazendo deploy do contrato
             showStatusMessage("Fazendo deploy do contrato...", "info");
 
             const gasEstimate = await deployTransaction.estimateGas({ from: selectedAccount });
@@ -244,7 +176,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     console.log("Transação enviada, aguardando mineração...", hash);
                     envioDeploy = performance.now(); // Tempo exato do envio
                 })
-                .once('receipt', (receipt) => {
+                .once('receipt', async (receipt) => {
                     fimDeploy = performance.now(); // Tempo da confirmação
                     tempoDeploy = ((fimDeploy - envioDeploy) / 1000).toFixed(4) + " s"; // Em segundos
 
@@ -253,7 +185,41 @@ document.addEventListener("DOMContentLoaded", () => {
                     temposExecucao["1 - Tempo Deploy Contrato"] = tempoDeploy;
                     console.log("Tempo real de deploy:", tempoDeploy);
 
-                    // Salva no localStorage com o endereço do contrato
+                    // Cálculo do gás usado e taxa em ETH
+                    const gasUsed = receipt.gasUsed;
+                    const gasPrice = receipt.effectiveGasPrice;
+                    const gasFee = BigInt(gasUsed) * BigInt(gasPrice); // Cálculo do custo total do gás
+                    const gasFeeInETH = Number(gasFee) / 1e18; // Convertendo de wei para ETH
+
+                    console.log("Custo Total de Gas (ETH):", gasFeeInETH);
+
+                    // Obter o preço atual do ETH em USD
+                    const ethPriceUSD = await getETHPrice();
+                    let gasFeeInUSD = null;
+                    if (ethPriceUSD !== null) {
+                        gasFeeInUSD = gasFeeInETH * ethPriceUSD; // Converter gás de ETH para USD
+                        console.log(`Custo do gás em USD: $${gasFeeInUSD.toFixed(2)}`);
+                        console.log(`Preço atual do Ethereum: $${ethPriceUSD.toFixed(2)} USD`);
+                    } else {
+                        console.log("Não foi possível obter o preço do ETH.");
+                    }
+
+                    // Preço do Ethereum (em USD)
+                    const ethPrice = ethPriceUSD !== null ? ethPriceUSD.toFixed(2) : "Indisponível";
+
+                    // Preencher o objeto temposExecucao com as informações de tempo e outras informações
+                    temposExecucao["1.1 Custo Total de Gas (ETH)"] = gasFeeInETH.toString();
+                    temposExecucao["1.2 Custo Total de Gas (USD)"] = gasFeeInUSD !== null ? gasFeeInUSD.toFixed(2) : "Indisponível";
+                    temposExecucao["1.3 Preço Atual do Ethereum (USD)"] = ethPrice;
+                    temposExecucao["1.4 Data da Execução"] = formatarDataBrasileira(new Date()); // Armazenando a data no formato brasileiro
+
+                    // Exibir os valores no console
+                    console.log("1.1 Custo Total de Gas (ETH)", temposExecucao["1.1 Custo Total de Gas (ETH)"]);
+                    console.log("1.2 Custo Total de Gas (USD)", temposExecucao["1.2 Custo Total de Gas (USD)"]);
+                    console.log("1.3 Preço Atual do Ethereum (USD)", temposExecucao["1.3 Preço Atual do Ethereum (USD)"]);
+                    console.log("1.4 Data da Execução", temposExecucao["1.4 Data da Execução"]);
+
+                    // Salvar no localStorage com o endereço do contrato
                     localStorage.setItem(`tempos_${receipt.contractAddress}`, JSON.stringify(temposExecucao));
 
                     showStatusMessage("Contrato implantado com sucesso!", "success");
@@ -264,6 +230,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             // Enviando fundos para o contrato
             showStatusMessage("Enviando fundos do pagamento para o contrato...", "info");
+
             const amountInEther = "0.001";
             const amountInWei = web3.utils.toWei(amountInEther, "ether");
 
@@ -278,17 +245,53 @@ document.addEventListener("DOMContentLoaded", () => {
                     console.log("Transação enviada, aguardando mineração...", hash);
                     envioPagamentoContrato = performance.now();
                 })
-                .once('receipt', (receipt) => {
+                .once('receipt', async (receipt) => {
                     fimPagamentoContrato = performance.now();
                     tempoPagamentoContrato = ((fimPagamentoContrato - envioPagamentoContrato) / 1000).toFixed(4) + " s";
 
                     temposExecucao["2 - Tempo Transação para o Contrato"] = tempoPagamentoContrato;
                     console.log("Tempo real Transação para o Contrato:", tempoPagamentoContrato);
 
+                    // Cálculo do gás usado e taxa em ETH
+                    const gasUsed = receipt.gasUsed;
+                    const gasPrice = receipt.effectiveGasPrice;
+                    const gasFee = BigInt(gasUsed) * BigInt(gasPrice); // Cálculo do custo total do gás
+                    const gasFeeInETH = Number(gasFee) / 1e18; // Convertendo de wei para ETH
+
+                    console.log("Custo Total de Gas (ETH):", gasFeeInETH);
+
+                    // Obter o preço atual do ETH em USD
+                    const ethPriceUSD = await getETHPrice();
+                    let gasFeeInUSD = null;
+                    if (ethPriceUSD !== null) {
+                        gasFeeInUSD = gasFeeInETH * ethPriceUSD; // Converter gás de ETH para USD
+                        console.log(`Custo do gás em USD: $${gasFeeInUSD.toFixed(2)}`);
+                        console.log(`Preço atual do Ethereum: $${ethPriceUSD.toFixed(2)} USD`);
+                    } else {
+                        console.log("Não foi possível obter o preço do ETH.");
+                    }
+
+                    // Preço do Ethereum (em USD)
+                    const ethPrice = ethPriceUSD !== null ? ethPriceUSD.toFixed(2) : "Indisponível";
+
+                    // Preencher o objeto temposExecucao com as informações de tempo e outras informações
+                    temposExecucao["2.1 Custo Total de Gas (ETH)"] = gasFeeInETH.toString();
+                    temposExecucao["2.2 Custo Total de Gas (USD)"] = gasFeeInUSD !== null ? gasFeeInUSD.toFixed(2) : "Indisponível";
+                    temposExecucao["2.3 Preço Atual do Ethereum (USD)"] = ethPrice;
+                    temposExecucao["2.4 Data da Execução"] = formatarDataBrasileira(new Date()); // Armazenando a data no formato brasileiro
+
+                    // Exibir os valores no console
+                    console.log("2.1 Custo Total de Gas (ETH)", temposExecucao["2.1 Custo Total de Gas (ETH)"]);
+                    console.log("2.2 Custo Total de Gas (USD)", temposExecucao["2.2 Custo Total de Gas (USD)"]);
+                    console.log("2.3 Preço Atual do Ethereum (USD)", temposExecucao["2.3 Preço Atual do Ethereum (USD)"]);
+                    console.log("2.4 Data da Execução", temposExecucao["2.4 Data da Execução"]);
+
+                    // Salvar no localStorage com o endereço do contrato
                     localStorage.setItem(`tempos_${deployedContract.options.address}`, JSON.stringify(temposExecucao));
 
                     showStatusMessage(`Fundos enviados com sucesso! Valor: ${amountInEther} Ether`, "success");
                 });
+
 
             // Enviando pagamento para VPN
             showStatusMessage("Enviando o pagamento do contrato para a VPN...", "info");
@@ -303,19 +306,55 @@ document.addEventListener("DOMContentLoaded", () => {
                     console.log("Transação para VPN enviada, aguardando mineração...", hash);
                     envioVPN = performance.now();
                 })
-                .once('receipt', (receipt) => {
+                .once('receipt', async (receipt) => {
+
                     fimVPN = performance.now();
                     tempoVPN = ((fimVPN - envioVPN) / 1000).toFixed(4) + " s";
 
-                    temposExecucao["3 - Tempo Transação do Contrato Para a VPN"] = tempoVPN;
-                    console.log("Tempo real Transação do Contrato Para a VPN:", tempoVPN);
+                    // Cálculo do gás usado e taxa em ETH
+                    const gasUsed = receipt.gasUsed;
+                    const gasPrice = receipt.effectiveGasPrice;
+                    const gasFee = BigInt(gasUsed) * BigInt(gasPrice); // Cálculo do custo total do gás
+                    const gasFeeInETH = Number(gasFee) / 1e18; // Convertendo de wei para ETH
 
+                    console.log("Custo Total de Gas (ETH):", gasFeeInETH);
+
+                    // Obter o preço atual do ETH em USD
+                    const ethPriceUSD = await getETHPrice();
+                    let gasFeeInUSD = null;
+                    if (ethPriceUSD !== null) {
+                        gasFeeInUSD = gasFeeInETH * ethPriceUSD; // Converter gás de ETH para USD
+                        console.log(`Custo do gás em USD: $${gasFeeInUSD.toFixed(2)}`);
+                        console.log(`Preço atual do Ethereum: $${ethPriceUSD.toFixed(2)} USD`);
+                    } else {
+                        console.log("Não foi possível obter o preço do ETH.");
+                    }
+
+                    // Preço do Ethereum (em USD)
+                    const ethPrice = ethPriceUSD !== null ? ethPriceUSD.toFixed(2) : "Indisponível";
+
+                    // Preencher o objeto temposExecucao com as informações de tempo e outras informações
+                    temposExecucao["3 - Tempo Transação do Contrato Para a VPN"] = tempoVPN;
+                    temposExecucao["3.1 Custo Total de Gas (ETH)"] = gasFeeInETH.toString(); // Exibir com todas as casas decimais
+                    temposExecucao["3.2 Custo Total de Gas (USD)"] = gasFeeInUSD !== null ? gasFeeInUSD.toFixed(2) : "Indisponível";
+                    temposExecucao["3.3 Preço Atual do Ethereum (USD)"] = ethPrice;
+                    temposExecucao["3.4 Data da Execução"] = formatarDataBrasileira(new Date()); // Armazenando a data no formato brasileiro
+
+                    // Exibir os valores no console
+                    console.log("3 - Tempo Transação do Contrato Para a VPN", temposExecucao["3 - Tempo Transação do Contrato Para a VPN"]);
+                    console.log("3.1 Custo Total de Gas (ETH)", temposExecucao["3.1 Custo Total de Gas (ETH)"]);
+                    console.log("3.2 Custo Total de Gas (USD)", temposExecucao["3.2 Custo Total de Gas (USD)"]);
+                    console.log("3.3 Preço Atual do Ethereum (USD)", temposExecucao["3.3 Preço Atual do Ethereum (USD)"]);
+                    console.log("3.4 Data da Execução", temposExecucao["3.4 Data da Execução"]);
+
+                    // Salvar no localStorage
                     localStorage.setItem(`tempos_${deployedContract.options.address}`, JSON.stringify(temposExecucao));
 
                     showStatusMessage("Pagamento enviado com sucesso!", "success");
                 });
 
             console.log("Transação confirmada:", tx);
+
 
             // Medindo o tempo para obter o receiptCode
             let inicioReceiptCode = performance.now();
