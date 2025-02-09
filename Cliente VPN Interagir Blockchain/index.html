@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -38,7 +39,10 @@
             color: #555;
         }
 
-        #accountSelect, #connectWallet, #deployContract, #timeSelection {
+        #accountSelect,
+        #connectWallet,
+        #deployContract,
+        #timeSelection {
             width: 100%;
             padding: 10px;
             margin: 10px 0;
@@ -47,7 +51,8 @@
             font-size: 16px;
         }
 
-        #accountSelect, #timeSelection {
+        #accountSelect,
+        #timeSelection {
             background-color: #f9f9f9;
         }
 
@@ -83,19 +88,23 @@
             background-color: #218838;
         }
 
-        #statusMessage, #statusContrato {
+        #statusMessage,
+        #statusContrato {
             text-align: center;
             margin-top: 20px;
             font-size: 16px;
         }
 
         #statusMessage {
-            color: #f44336; /* vermelho */
+            color: #4b2101;
+            /* vermelho */
         }
 
         #statusContrato {
-            color: #28a745; /* verde */
+            color: #28a745;
+            /* verde */
         }
+
         /* Estilo para as mensagens de status */
         .status-message {
             padding: 10px;
@@ -132,15 +141,21 @@
             border: 1px solid #b8daff;
         }
 
+        .waiting-message {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+        }
     </style>
 </head>
+
 <body>
     <div class="container">
         <h1>Pagamento Serviço VPN</h1>
         <h2>Selecione uma conta para realizar o pagamento</h2>
         <select id="accountSelect">
             <option value="">Conecte sua carteira para listar contas</option>
-       </select> <!--
+        </select> <!--
         <select id="timeSelection">
             As opções serão preenchidas dinamicamente pelo JavaScript
         </select>-->
@@ -150,4 +165,5 @@
         <div id="statusContrato"></div>
     </div>
 </body>
+
 </html>

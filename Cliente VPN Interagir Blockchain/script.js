@@ -139,6 +139,20 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
+    // Função para calcular o valor em Ether equivalente a um valor em USD
+    async function getAmountInEther(amountInUSD) {
+        const ethPriceUSD = await getETHPriceAndTimestamp(); // Função para obter o preço do Ethereum em USD
+        if (ethPriceUSD !== null) {
+            const amountInEther = amountInUSD / ethPriceUSD.ethPriceUSD; // Calcula o valor equivalente em Ether
+            return amountInEther.toFixed(4); // Retorna com 4 casas decimais
+        } else {
+            // Se não conseguir obter o preço, retorna o valor padrão de 0.001 ETH
+            console.log("Não foi possível obter o preço do ETH. Usando valor padrão de 0.001 ETH.");
+            return "0.001"; // Valor padrão
+        }
+    }
+
+
     const contractInfo = document.createElement("p");
     document.querySelector(".container").appendChild(contractInfo);
 
@@ -161,9 +175,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
             accountSelect.disabled = true;
             connectWallet.disabled = true;
+            deployContractButton.disabled = true;
 
             // Fazendo deploy do contrato
-            showStatusMessage("Fazendo deploy do contrato...", "info");
+            showStatusMessage("Fazendo deploy do contrato...", "waiting");
 
             const gasEstimate = await deployTransaction.estimateGas({ from: selectedAccount });
 
@@ -224,15 +239,18 @@ document.addEventListener("DOMContentLoaded", () => {
                     // Salvar no localStorage com o endereço do contrato
                     localStorage.setItem(`tempos_${receipt.contractAddress}`, JSON.stringify(temposExecucao));
 
-                    showStatusMessage("Contrato implantado com sucesso!", "success");
+                    //showStatusMessage("Contrato implantado com sucesso!", "success");
 
                     contractInfo.innerHTML = `<strong>Endereço do contrato:</strong> ${receipt.contractAddress}<br>`;
 
                 });
             // Enviando fundos para o contrato
-            showStatusMessage("Enviando fundos do pagamento para o contrato...", "info");
+            showStatusMessage("Enviando fundos do pagamento para o contrato...", "waiting");
 
-            const amountInEther = "0.001";
+            const amountInEther = await getAmountInEther(20);
+
+            contractInfo.innerHTML += `<br>💬 Será enviado $20 (${amountInEther} ETH) para o contrato!<br>`;
+
             const amountInWei = web3.utils.toWei(amountInEther, "ether");
 
             let envioPagamentoContrato, fimPagamentoContrato, tempoPagamentoContrato;
@@ -290,11 +308,10 @@ document.addEventListener("DOMContentLoaded", () => {
                     // Salvar no localStorage com o endereço do contrato
                     localStorage.setItem(`tempos_${deployedContract.options.address}`, JSON.stringify(temposExecucao));
 
-                    showStatusMessage(`Fundos enviados com sucesso! Valor: ${amountInEther} Ether`, "success");
                 });
 
             // Enviando pagamento para VPN
-            showStatusMessage("Enviando o pagamento do contrato para a VPN...", "info");
+            showStatusMessage("Enviando o pagamento do contrato para a VPN...", "waiting");
             const vpnAddress = "0xdCcEEd9A4b102093bB0eC1e81a0969d9BB6b55a2";
 
             let envioVPN, fimVPN, tempoVPN;
