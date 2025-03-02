@@ -7,9 +7,9 @@ O código neste repositório refere-se à *fase de configuração*, ou seja, a c
 ![image](https://github.com/user-attachments/assets/3a8b8c84-a32c-4d4f-ad46-706fce8fd09d)
 
 ## Este Repositório possui três pastas:
-- Api Python Consulta Preço ETH para USD: Responsável por consultar o preço do Ethereum (ETH) em dólares (USD) utilizando a API do CoinMarketCap. Essa funcionalidade é essencial para obter o valor do ETH no momento de cada transação e converter os custos de gás para o valor correspondente em dólar.
-- Cliente VPN Interagir Blockchain: Representa o Cliente VPN. Sua principal função é conectar-se à carteira do usuário e gerenciar a interação com a blockchain.
-- Servidor VPN Interagir Blockchain: Responsável por verificar se o pagamento realizado é legítimo, garantindo a segurança da transação.
+- **Api Python Consulta Preço ETH para USD**: Responsável por consultar o preço do Ethereum (ETH) em dólares (USD) utilizando a API do CoinMarketCap. Essa funcionalidade é essencial para obter o valor do ETH no momento de cada transação e converter os custos de gás para o valor correspondente em dólar.
+- **Cliente VPN Interagir Blockchain**: Representa o Cliente VPN. Sua principal função é conectar-se à carteira do usuário e gerenciar a interação com a blockchain.
+- **Servidor VPN Interagir Blockchain**: Responsável por verificar se o pagamento realizado é legítimo, garantindo a segurança da transação.
 
 ## 1.2 Api Python Consulta Preço ETH para USD
 
