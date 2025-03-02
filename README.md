@@ -62,6 +62,16 @@ A interface web foi projetada para ser simples e intuitiva para o usuário.
 
 ## 1.4 Servidor VPN Interagir Blockchain
 
+- Primeiramente, deve-se ter o Python instalado, depois instalar as seguinte bibliotecas:
+
+`pip install flask web3 flask-cors eth-hash`
+
+Para exemplificar o que o servidor faz, basicamente, ele vai buscar na blockchain o registro de log (evento) e verificar se o pagamento de fato foi realizado. Para isso, ele faz a busca nos últimos 100 blocos inseridos na blockchain. Basicamente, o servidor vai recalcular o valor hash e, se encontrar o mesmo valor, significa que está tudo certo. O exemplo abaixo mostra que o valor hash foi exatamente calculado da mesma forma.
+
+![WhatsApp Image 2025-02-03 at 20 22 24](https://github.com/user-attachments/assets/81ccb9c4-d73f-4950-9753-f120a1b5b7a8)
+
+
+
 
 
 
