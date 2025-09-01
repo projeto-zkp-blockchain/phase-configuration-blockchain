@@ -11,10 +11,10 @@ import time
 app = Flask(__name__)
 CORS(app)
 
-# Configurar a conexão com a blockchain         
-#rpc_url = "https://holesky.drpc.org"  # Substitua com a URL do seu nó
-#rpc_url = "https://ethereum-sepolia-rpc.publicnode.com"  # Substitua com a URL do seu nó
-rpc_url = "HTTP://127.0.0.1:7545"  # Substitua com a URL do seu nó
+# Set up the connection to the blockchain   
+#rpc_url = "https://holesky.drpc.org"  # Replace with your node's URL
+#rpc_url = "https://ethereum-sepolia-rpc.publicnode.com"  # Replace with your node's URL
+rpc_url = "HTTP://127.0.0.1:7545"  # Replace with your node's URL
 web3 = Web3(Web3.HTTPProvider(rpc_url))
 
 contrato_abi = [
@@ -32,30 +32,30 @@ contrato_abi = [
     }
 ]
 
-# Calcula o hash SHA256 de strings concatenadas e retorna em inteiro
+# Calculates the SHA256 hash of concatenated strings and returns as integer
 def H(*args):
     concatenated = "".join(args)
     hash_hex = hashlib.sha256(concatenated.encode('utf-8')).hexdigest()
     return int(hash_hex, 16)
 
 def generate_hash_value(receipt_code: str, amount: int, timestamp: int) -> str:
-    """Gera o hashValue a partir do receiptCode, amount e block.timestamp"""
+    """Generates the hashValue from receiptCode, amount, and block.timestamp"""
     receipt_bytes = bytes.fromhex(receipt_code[2:] if receipt_code.startswith("0x") else receipt_code)
     amount_bytes = amount.to_bytes(32, 'big')  # uint256 -> 32 bytes
-    timestamp_bytes = timestamp.to_bytes(32, 'big')  # uint256 -> 32 bytes (corrigido)
+    timestamp_bytes = timestamp.to_bytes(32, 'big')  # uint256 -> 32 bytes (corrected)
 
-    data = receipt_bytes + amount_bytes + timestamp_bytes  # Concatenando como Solidity faz
-    return keccak(data).hex()  # Adiciona prefixo 0x para compatibilidade
+    data = receipt_bytes + amount_bytes + timestamp_bytes  # Concatenating as Solidity does
+    return keccak(data).hex()  # Adds 0x prefix for compatibility
 
 
 def salvar_json(dados, arquivo_json="usuarios.json"):
-    """ Salva os dados da transação no arquivo JSON dentro do diretório do script """
+    """ Saves the transaction data to a JSON file inside the script's directory """
 
-    # Obtém o diretório onde o script está localizado
+    # Gets the directory where the script is located
     diretorio_script = os.path.dirname(os.path.abspath(__file__))  
     caminho_arquivo = os.path.join(diretorio_script, arquivo_json)  
 
-    # Verifica se o arquivo já existe e carrega os dados existentes
+    # Checks if the file already exists and loads existing data
     registros = []
     if os.path.exists(caminho_arquivo):
         try:
@@ -64,16 +64,16 @@ def salvar_json(dados, arquivo_json="usuarios.json"):
         except (json.JSONDecodeError, FileNotFoundError):
             print("⚠️ Erro ao ler JSON. Criando um novo arquivo.")
 
-    # Adiciona os novos dados
+    # Add the new data
     registros.append(dados)
 
-    # Salva o JSON no mesmo diretório do script
+    # Saves the JSON in the same directory as the script
     with open(caminho_arquivo, "w") as f:
         json.dump(registros, f, indent=4)
 
-    print(f"✅ Dados salvos em {caminho_arquivo}")
+    #print(f"\n✅ Data saved to {caminho_arquivo}")
 
-@app.route('/verificarPagamento', methods=['POST'])
+@app.route('/verify-payment', methods=['POST'])
 def verificar_pagamento():
     data = request.get_json()
     addressContract = data["addressContract"]
@@ -81,25 +81,25 @@ def verificar_pagamento():
     Quser_x = data["Quser"]["x"]
     Quser_y = data["Quser"]["y"]
 
-    start_time = time.time()  # Inicia a contagem do tempo de verificação
+    start_time = time.time()  # Start the verification time count
 
-    # Definir o intervalo de busca (últimos 100 blocos)
+    # Define the search range (last 100 blocks)
     start_block = max(0, web3.eth.block_number - 100)
     end_block = web3.eth.block_number
 
     contract = web3.eth.contract(address=addressContract, abi=contrato_abi)
 
-    print(f"🔍 Buscando eventos entre os blocos {start_block} e {end_block}...")
+    print(f"\n🔍 Searching for events between blocks {start_block} and {end_block}...")
 
-    # Buscar eventos dentro do intervalo
+    # Search for events within the range
     event_logs = contract.events.PaymentTransferred.get_logs(from_block=start_block, to_block=end_block)
 
     if event_logs:
-        event = event_logs[0]  # Pega o primeiro evento encontrado
-        print(f"\n✅ Evento encontrado no bloco {event['blockNumber']}:")
-        print(f"De: {event['args']['from']}")
-        print(f"Para: {event['args']['to']}")
-        print(f"Valor: {web3.from_wei(event['args']['amount'], 'ether')} ETH")
+        event = event_logs[0]  # Get the first event found
+        print(f"\n✅ Event found in block {event['blockNumber']}:")
+        print(f"From: {event['args']['from']}")
+        print(f"To: {event['args']['to']}")
+        print(f"Value: {web3.from_wei(event['args']['amount'], 'ether')} ETH")
         print(f"HashValue: {event['args']['hashValue'].hex()}")
         print(f"Timestamp: {event['args']['timestamp']}")
 
@@ -107,15 +107,15 @@ def verificar_pagamento():
         hashValue_event = event['args']['hashValue'].hex()
         timestamp = event['args']['timestamp']
 
-        # Gera o hash para verificar a autenticidade do evento
+        # Generate the hash to verify the authenticity of the event
         hash_value = generate_hash_value(receiptCode, amount, timestamp)
 
-        print("Hash Value Event:", hashValue_event)
-        print("Hash Value Calculado:", hash_value)
+        print("\nHash Value from Event:", hashValue_event)
+        print("Calculated Hash Value:", hash_value)
 
         IDuser = H(str(Quser_x), str(Quser_y))
 
-        tempoVerificacao = time.time() - start_time  # Calcula o tempo de verificação
+        tempoVerificacao = time.time() - start_time  # Calculate the verification time
 
         pagamento_info = {
             "IDuser": str(IDuser),
@@ -134,15 +134,17 @@ def verificar_pagamento():
             "tempoVerificacao": tempoVerificacao
         }
 
-        # Salvar os dados no JSON
+        # Save the data in JSON
         salvar_json(pagamento_info)
 
         if hashValue_event == hash_value:
+            print(f"Legitimate user ✅\n")
             return jsonify({'IDuser': str(IDuser)})
         else:
+            print(f"User not legitimate ❌\n")
             return jsonify(False)
 
-    print("🚫 Nenhum evento encontrado no intervalo definido.")
+    print("🚫 No events found in the specified range.")
     return jsonify(False)
 
 
