@@ -1,74 +1,78 @@
-# 1. Implementação *fase de configuração*
+# 1. Implementation *Configuration Phase*
 
-## 1.1 Informações gerais
+## 1.1 General Information
 
-O código neste repositório refere-se à *fase de configuração*, ou seja, a contratação pelo serviço e recebimentos dos parâmetros de autenticação. De forma breve segue o fluxo semelhante ao que pode ser visto abaixo:
+The code in this repository refers to the *configuration phase*, that is, the service subscription and the receipt of authentication parameters. In brief, the workflow is similar to what can be seen below:
 
-![image](https://github.com/user-attachments/assets/3a8b8c84-a32c-4d4f-ad46-706fce8fd09d)
+<img width="4952" height="5484" alt="image" src="https://github.com/user-attachments/assets/ebb42b69-a9c4-488c-b368-3c148cf2f613" />
 
-## Este Repositório possui três pastas:
-- **Api Python Consulta Preço ETH para USD**: Responsável por consultar o preço do Ethereum (ETH) em dólares (USD) utilizando a API do CoinMarketCap. Essa funcionalidade é essencial para obter o valor do ETH no momento de cada transação e converter os custos de gás para o valor correspondente em dólar.
-- **Cliente VPN Interagir Blockchain**: Representa o Cliente VPN. Sua principal função é conectar-se à carteira do usuário e gerenciar a interação com a blockchain.
-- **Servidor VPN Interagir Blockchain**: Responsável por verificar se o pagamento realizado é legítimo, garantindo a segurança da transação.
+## This Repository Contains Three Folders:
+- **PythonAPI-ETH-USD-Price**: Responsible for querying the price of Ethereum (ETH) in US dollars (USD) using the CoinMarketCap API. This functionality is essential to obtain the ETH value at the time of each transaction and convert the gas fees to the corresponding USD amount.
+- **VPN-Client-Blockchain-Interaction**: Represents the VPN Client. Its main function is to connect to the user's wallet and manage the interaction with the blockchain.
+- **VPN-Server-Blockchain-Interaction**: Responsible for verifying whether the payment made is legitimate, ensuring the security of the transaction.
 
-## 1.2 Api Python Consulta Preço ETH para USD
+## 1.2 Python API ETH to USD Price Query
 
-- Primeiramente, deve-se ter o Python instalado.
-- As bibliotecas necessárias para a instalação: `Flask`, `requests`, `flask-cors`, existe outras, mas, fazem parte das bibliotecas padrões. Para instalar, basta executar:
+- First, Python must be installed.
+- The required libraries for installation are: `Flask`, `requests`, `flask-cors`. There are others, but they are part of the standard libraries. To install, simply run:
   
 `pip install flask requests flask-cors`
 
-- Um ponto muito importante: para acessar a API do [CoinMarketCap](https://coinmarketcap.com/), deve-se criar uma conta na plataforma para gerar uma chave de acesso à API. Essa chave deve ser inserida no local indicado no código Python.
-- Após isso, basta rodar o código como uma API. Esse serviço será importante para que o Cliente VPN possa consultar o preço do ETH em USD.
-- A API pode ser hospedada em uma VM no Google Cloud, como foi desenvolvido. Uma alternativa mais simples seria rodá-la no [Replit](https://replit.com/), que permite executar código Python de forma prática, porém com algumas limitações.
-- A imagem a seguir mostra o retorno da rota pra consultar o preço do ETH:
+- A very important point: to access the [CoinMarketCap](https://coinmarketcap.com/) API, you must create an account on the platform to generate an API access key. This key must be inserted in the designated location in the Python code.
+- After that, simply run the code as an API. This service is essential for the VPN Client to query the price of ETH in USD.
+- The API can be hosted on a VM in Google Cloud, as it was developed. A simpler alternative would be to run it on [Replit](https://replit.com/), which allows Python code to be executed conveniently, but with some limitations.
+- The image below shows the response from the route to query the ETH price:
 
 ![preco-eth-usd](https://github.com/user-attachments/assets/c2215327-458a-4b79-a4be-0c9fdb9edc47)
 
-## 1.3 Cliente VPN Interagir Blockchain
+## 1.3 VPN Client Blockchain Interaction
 
-O código do Cliente VPN é composto principalmente por arquivos **HTML**, **JavaScript** e outros que não necessitam de configuração adicional, como o **ABI** e o **Bytecode** do Contrato Inteligente.
+The VPN Client code is mainly composed of **HTML**, **JavaScript**, and other files that do not require additional configuration, such as the **ABI** and **Bytecode** of the Smart Contract.
 
-### Executando o Cliente VPN  
+### Running the VPN Client  
 
-Para rodar a aplicação onde for necessário (no nosso caso, foi utilizada uma **VM no Google Cloud**), basta acessar a pasta do projeto na VM e executar o seguinte comando:
+To run the application wherever needed (in our case, a **VM on Google Cloud** was used), simply navigate to the project folder on the VM and execute the following command:
 
 `python3 -m http.server 5000`
 
-### Sobre a Interface Web  
+### About the Web Interface  
 
-A interface web foi projetada para ser simples e intuitiva para o usuário.  
+The web interface was designed to be simple and intuitive for the user.  
 
-- Ao acessar a página, há um botão para conectar à carteira do usuário.  
-- Após a conexão, as contas disponíveis na carteira serão listadas na página web.  
-- O usuário seleciona a conta que deseja utilizar para o pagamento.  
-- Em seguida, basta clicar no botão **"Implantar Contrato e Realizar Pagamento"**.  
-- Por fim, será necessário confirmar as transações na carteira para concluir todo o processo de configuração.
+- Upon accessing the page, there is a button to connect to the user's wallet.  
+- After connecting, the accounts available in the wallet will be listed on the web page.  
+- The user selects the account they wish to use for payment.  
+- Then, simply click the **"Deploy Contract and Make Payment"** button.  
+- Finally, it is necessary to confirm the transactions in the wallet to complete the entire configuration process.
 
-### Imagem após selecionada uma conta:
-![Conta Selecionada Janela](https://github.com/user-attachments/assets/4e2d1cc9-80ae-4730-8371-ffa4ec833108)
+### Image after an account is selected:
+<img width="1920" height="1030" alt="1" src="https://github.com/user-attachments/assets/823cb420-8468-44a2-9014-03b3c4d89ab6" />
 
-### Fazendo deploy do Contrato Inteligente
-![1](https://github.com/user-attachments/assets/a94fff62-e4c7-478c-9955-f3adcc782bd0)
+### Deploying the Smart Contract
+<img width="1920" height="1030" alt="2 2" src="https://github.com/user-attachments/assets/30bf4deb-5562-4cf3-9a05-6c8cb9f17d97" />
 
-### Enviando valor do pagamento para o endereço do contrato inteligente
-![6](https://github.com/user-attachments/assets/4ccf0b8f-664f-4f0b-b76e-2a7923cff34d)
+### Sending the payment amount to the smart contract address
+<img width="1920" height="1030" alt="3 1" src="https://github.com/user-attachments/assets/07667cb8-ef7d-4c42-8ce4-ad6fb0725df8" />
 
-### Interagindo com a função do contrato inteligente que envia as criptomoedas armazenadas no contrato para o endereço da carteira do Servidor VPN
-![11](https://github.com/user-attachments/assets/079c6c93-ef62-40f2-b248-c65227a7f976)
+### Interacting with the smart contract function that sends the cryptocurrencies stored in the contract to the VPN Server's wallet address
+<img width="1920" height="1030" alt="4 1" src="https://github.com/user-attachments/assets/ffc48ee1-865b-4c4b-952e-a00cfb04a3d6" />
 
-### Tela final
-![tela final cheia](https://github.com/user-attachments/assets/5d070b85-da32-43c5-b40d-0289072eb7aa)
 
-## 1.4 Servidor VPN Interagir Blockchain
+### Final Screen
+<img width="1920" height="1030" alt="5" src="https://github.com/user-attachments/assets/7eb3aa47-34c9-4a98-8031-8d0002a76a30" />
 
-- Primeiramente, deve-se ter o Python instalado, depois instalar as seguinte bibliotecas:
+
+## 1.4 VPN Server Blockchain Interaction
+
+- First, Python must be installed, then install the following libraries:
 
 `pip install flask web3 flask-cors eth-hash`
 
-Para exemplificar o que o servidor faz, basicamente, ele vai buscar na blockchain o registro de log (evento) e verificar se o pagamento de fato foi realizado. Para isso, ele faz a busca nos últimos 100 blocos inseridos na blockchain. Basicamente, o servidor vai recalcular o valor hash e, se encontrar o mesmo valor, significa que está tudo certo. O exemplo abaixo mostra que o valor hash foi exatamente calculado da mesma forma.
+To illustrate what the server does, basically, it searches the blockchain for the log record (event) and verifies whether the payment was actually made. To do this, it searches the last 100 blocks added to the blockchain. Essentially, the server recalculates the hash value, and if it finds the same value, it means everything is correct. The example below shows that the hash value was calculated exactly the same way.
 
-![WhatsApp Image 2025-02-03 at 20 22 24](https://github.com/user-attachments/assets/81ccb9c4-d73f-4950-9753-f120a1b5b7a8)
+<img width="787" height="233" alt="6 git" src="https://github.com/user-attachments/assets/c40dbf58-44e8-485a-bc65-8ddb562dbca8" />
+
+
 
 
 
